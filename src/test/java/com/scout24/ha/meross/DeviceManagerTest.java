@@ -26,20 +26,21 @@ public class DeviceManagerTest {
 		final String email = args[0].split(" ")[0];
 		final String password = args[1].split(" ")[0];
 		DeviceManager deviceManager = new DeviceManager(email, password);
-		if (deviceManager.connect()) {
-			System.out.println("Successfully connected to API and broker, initializing online devices now");
-			deviceManager.initializeDevices();
-
-			final Map<String, MerossDevice> deviceList = deviceManager.getSupportedDevices();
-
-			System.out.println(deviceList);
-			for (String deviceUuid : deviceList.keySet()) {
-				final MerossDevice attachedDevice = deviceList.get(deviceUuid);
-				System.out.println("deviceUuid = " + deviceUuid + " device = " + attachedDevice);
-			}
-			deviceList.get(TERRASSE).turnOffChannel(3);
-			deviceManager.listenToUpdates();
-		}
+		System.out.println(deviceManager.getConnectionDetails());
+//		if (deviceManager.connect()) {
+//			System.out.println("Successfully connected to API and broker, initializing online devices now");
+//			deviceManager.initializeDevices();
+//
+//			final Map<String, MerossDevice> deviceList = deviceManager.getSupportedDevices();
+//
+//			System.out.println(deviceList);
+//			for (String deviceUuid : deviceList.keySet()) {
+//				final MerossDevice attachedDevice = deviceList.get(deviceUuid);
+//				System.out.println("deviceUuid = " + deviceUuid + " device = " + attachedDevice);
+//			}
+//			deviceList.get(TERRASSE).turnOffChannel(3);
+//			deviceManager.listenToUpdates();
+//		}
 	}
 
 }

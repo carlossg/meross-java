@@ -6,6 +6,9 @@ import com.scout24.ha.meross.mqtt.MerossDevice;
 import com.scout24.ha.meross.mqtt.MqttConnection;
 import com.scout24.ha.meross.rest.AttachedDevice;
 import com.scout24.ha.meross.rest.MerossHttpClient;
+
+import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -22,6 +25,18 @@ public class DeviceManager {
 	private Map<String, AttachedDevice> deviceList;
 	private MqttConnection connection;
 
+	@Data
+	@ToString
+	static class ConnectionDetails {
+		private String key;
+		private long userId;
+		private String token;
+		private String brokerDomain;
+		private int port;
+		private String usertopic;
+		private String clientResponseTopic;
+		private String hashedPassword;
+	}
 
 	public DeviceManager(String email, String password) {
 		this.email = email;
@@ -73,13 +88,38 @@ public class DeviceManager {
 	}
 	public boolean connect()  {
 		try {
-			merossHttpClient = new MerossHttpClient(email, password);
-			deviceList = merossHttpClient.mapSupportedDevices(false);
-			connection = new MqttConnection(merossHttpClient.getKey(), merossHttpClient.getUserId(),
+			ConnectionDetails details = getConnectionDetails();
+			log.info("Connecting to {} {} {} {}", merossHttpClient.getKey(), merossHttpClient.getUserId(),
 					merossHttpClient.getToken(), MEROSS_BROKER_DOMAIN);
+			connection = new MqttConnection(details.getKey(), details.getUserId(),
+					details.getToken(), details.getBrokerDomain());
+			connection.connectToBroker();
+			connection.subscribeToTopic(details.getUsertopic());
+			connection.subscribeToTopic(details.getClientResponseTopic());
 		} catch (MQTTException e) {
 			log.error("Error connecting ");
 		}
 		return true;
+	}
+
+	public ConnectionDetails getConnectionDetails()  {
+		ConnectionDetails details = new ConnectionDetails();
+		try {
+			merossHttpClient = new MerossHttpClient(email, password);
+			deviceList = merossHttpClient.mapSupportedDevices(false);
+			connection = new MqttConnection(merossHttpClient.getKey(), merossHttpClient.getUserId(),
+					merossHttpClient.getToken(), MEROSS_BROKER_DOMAIN);
+			details.setKey(merossHttpClient.getKey());
+			details.setUserId(merossHttpClient.getUserId());
+			details.setToken(merossHttpClient.getToken());
+			details.setBrokerDomain(MEROSS_BROKER_DOMAIN);
+			details.setPort(connection.getPort());
+			details.setUsertopic(connection.getUsertopic());
+			details.setClientResponseTopic(connection.getClientResponseTopic());
+			details.setHashedPassword(connection.getHashedPassword());
+		} catch (MQTTException e) {
+			log.error("Error connecting ");
+		}
+		return details;
 	}
 }

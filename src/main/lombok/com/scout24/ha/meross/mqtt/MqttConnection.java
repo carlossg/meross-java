@@ -38,6 +38,7 @@ public class MqttConnection {
     protected Lock statuslock = new ReentrantLock();
     protected byte[] ackresponse = null;
     //Topic where important notifications are pushed (needed if any other client is dealing with the same device)
+    @Getter
     String usertopic = null;
 
 
@@ -51,10 +52,14 @@ public class MqttConnection {
     @Getter
     private String appId = null;
     private String domain = null;
+    @Getter
     private int port = 2001;
     private String clientid = null;
+    @Getter
     private String clientResponseTopic;
     private Consumer<Map> globalMessageConsumer;
+    @Getter
+    private String hashedPassword;
 
     public MqttConnection(String key, Long userid, String token, String domain) throws MQTTException {
         this.key = key;
@@ -64,9 +69,9 @@ public class MqttConnection {
         this.domain = domain;
         this.generateFClientandAppId();
         this.clientResponseTopic = "/app/" + userId+ "-" + appId + "/subscribe";
-        this.connectToBroker();
-        this.subscribeToTopic(this.usertopic);
-        this.subscribeToTopic(this.clientResponseTopic);
+        //Password is calculated as the MD5 of USERID concatenated with KEY
+        String clearpwd = this.userId + this.key;
+        this.hashedPassword = md5DigestAsHex(clearpwd.getBytes());
     }
 
     protected MqttConnection() {
@@ -74,10 +79,6 @@ public class MqttConnection {
     }
 
     public void connectToBroker() throws MQTTException {
-        //Password is calculated as the MD5 of USERID concatenated with KEY
-        String clearpwd = this.userId + this.key;
-        String hashedpassword = md5DigestAsHex(clearpwd.getBytes());
-
         Mqtt3Client mqtt3Client = Mqtt3Client.builder()
                 .identifier(clientid)
                 .serverHost(this.domain)
@@ -92,7 +93,7 @@ public class MqttConnection {
             send = blockingClient.connectWith()
                     .simpleAuth()
                     .username(this.userId)
-                    .password(hashedpassword.getBytes())
+                    .password(this.hashedPassword.getBytes())
                     .applySimpleAuth();
         } else {
             send = mqtt3Client.toBlocking().connectWith();
